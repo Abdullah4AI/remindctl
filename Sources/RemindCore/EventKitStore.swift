@@ -102,6 +102,16 @@ public actor RemindersStore {
     reminder.priority = draft.priority.eventKitValue
     if let dueDate = draft.dueDate {
       reminder.dueDateComponents = calendarComponents(from: dueDate)
+      // Add alarm if urgent flag is set
+      if draft.urgent {
+        // Set priority to high for urgent reminders
+        reminder.priority = 1  // High priority
+        
+        // Add alarm with sound
+        let alarm = EKAlarm(absoluteDate: dueDate)
+        alarm.soundName = "Alarm"  // System alarm sound
+        reminder.addAlarm(alarm)
+      }
     }
     try eventStore.save(reminder, commit: true)
     return ReminderItem(
@@ -112,6 +122,7 @@ public actor RemindersStore {
       completionDate: reminder.completionDate,
       priority: ReminderPriority(eventKitValue: Int(reminder.priority)),
       dueDate: date(from: reminder.dueDateComponents),
+      hasAlarm: reminder.hasAlarms,
       listID: reminder.calendar.calendarIdentifier,
       listName: reminder.calendar.title
     )
@@ -153,6 +164,7 @@ public actor RemindersStore {
       completionDate: reminder.completionDate,
       priority: ReminderPriority(eventKitValue: Int(reminder.priority)),
       dueDate: date(from: reminder.dueDateComponents),
+      hasAlarm: reminder.hasAlarms,
       listID: reminder.calendar.calendarIdentifier,
       listName: reminder.calendar.title
     )
@@ -173,6 +185,7 @@ public actor RemindersStore {
           completionDate: reminder.completionDate,
           priority: ReminderPriority(eventKitValue: Int(reminder.priority)),
           dueDate: date(from: reminder.dueDateComponents),
+          hasAlarm: reminder.hasAlarms,
           listID: reminder.calendar.calendarIdentifier,
           listName: reminder.calendar.title
         )
@@ -212,6 +225,7 @@ public actor RemindersStore {
       let completionDate: Date?
       let priority: Int
       let dueDateComponents: DateComponents?
+      let hasAlarm: Bool
       let listID: String
       let listName: String
     }
@@ -228,6 +242,7 @@ public actor RemindersStore {
             completionDate: reminder.completionDate,
             priority: Int(reminder.priority),
             dueDateComponents: reminder.dueDateComponents,
+            hasAlarm: reminder.hasAlarms,
             listID: reminder.calendar.calendarIdentifier,
             listName: reminder.calendar.title
           )
@@ -245,6 +260,7 @@ public actor RemindersStore {
         completionDate: data.completionDate,
         priority: ReminderPriority(eventKitValue: data.priority),
         dueDate: date(from: data.dueDateComponents),
+        hasAlarm: data.hasAlarm,
         listID: data.listID,
         listName: data.listName
       )
@@ -284,6 +300,7 @@ public actor RemindersStore {
       completionDate: reminder.completionDate,
       priority: ReminderPriority(eventKitValue: Int(reminder.priority)),
       dueDate: date(from: reminder.dueDateComponents),
+      hasAlarm: reminder.hasAlarms,
       listID: reminder.calendar.calendarIdentifier,
       listName: reminder.calendar.title
     )
