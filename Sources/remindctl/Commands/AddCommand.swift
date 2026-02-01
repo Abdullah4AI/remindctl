@@ -24,6 +24,9 @@ enum AddCommand {
               help: "none|low|medium|high",
               parsing: .singleValue
             ),
+          ],
+          flags: [
+            .make(label: "urgent", names: [.short("u"), .long("urgent")], help: "Set alarm at due time (requires --due)"),
           ]
         )
       ),
@@ -31,6 +34,7 @@ enum AddCommand {
         "remindctl add \"Buy milk\"",
         "remindctl add --title \"Call mom\" --list Personal --due tomorrow",
         "remindctl add \"Review docs\" --priority high",
+        "remindctl add \"Meeting\" --due \"2026-02-01 14:00\" --urgent",
       ]
     ) { values, runtime in
       let titleOption = values.option("title")
@@ -56,9 +60,15 @@ enum AddCommand {
       let notes = values.option("notes")
       let dueValue = values.option("due")
       let priorityValue = values.option("priority")
+      let urgent = values.flag("urgent")
 
       let dueDate = try dueValue.map(CommandHelpers.parseDueDate)
       let priority = try priorityValue.map(CommandHelpers.parsePriority) ?? .none
+
+      // Urgent requires a due date
+      if urgent && dueDate == nil {
+        throw RemindCoreError.operationFailed("--urgent requires --due to be set")
+      }
 
       let store = RemindersStore()
       try await store.requestAccess()
@@ -73,7 +83,7 @@ enum AddCommand {
         throw RemindCoreError.operationFailed("No default list found. Specify --list.")
       }
 
-      let draft = ReminderDraft(title: title, notes: notes, dueDate: dueDate, priority: priority)
+      let draft = ReminderDraft(title: title, notes: notes, dueDate: dueDate, priority: priority, urgent: urgent)
       let reminder = try await store.createReminder(draft, listName: targetList)
       OutputRenderer.printReminder(reminder, format: runtime.outputFormat)
     }
